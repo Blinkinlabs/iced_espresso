@@ -1,4 +1,4 @@
-# Iced Espresso by Blinkinlabs
+# ICEd ESPpresso by Blinkinlabs
 
 ![](iced_espresso_revd.png)
 
