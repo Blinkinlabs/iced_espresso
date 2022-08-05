@@ -1,0 +1,85 @@
+menu "FPGA"
+
+config FPGA_SPI_BUFFER_COUNT
+    int "FPGA SPI transaction buffers"
+    default 8
+    help
+        Number of buffers for queueing SPI transfers
+
+config FPGA_SPI_BUFFER_SIZE
+    int "FPGA SPI transaction max size"
+    default 512
+    help
+        Maximum size of SPI transaction buffers
+
+config FPGA_CS_GPIO
+    int "FPGA CS"
+	range 0 44
+	default 10
+	help
+	    FPGA interface CS signal
+
+config FPGA_SCLK_GPIO
+    int "FPGA CLK"
+	range 0 44
+	default 12
+	help
+	    FPGA interface CLK signal
+
+config FPGA_MOSI_GPIO
+    int "FPGA MOSI"
+	range 0 44
+	default 11
+	help
+	    FPGA interface MOSI signal
+
+config FPGA_MISO_GPIO
+    int "FPGA MISO"
+	range 0 46
+	default 13
+	help
+	    FPGA interface MISO signal
+
+config FPGA_WP_GPIO
+    int "FPGA WP"
+	range -1 46
+	default 8
+	help
+	    FPGA interface WP signal
+
+config FPGA_HD_GPIO
+    int "FPGA HD"
+	range -1 46
+	default 9
+	help
+	    FPGA interface HP signal
+
+config FPGA_CRESET_GPIO
+    int "FPGA CRESET"
+	range 0 44
+	default 33
+	help
+	    FPGA programming interface CRSESET signal
+
+config FPGA_CDONE_GPIO
+    int "FPGA CDONE"
+	range 0 46
+	default 34
+	help
+	    FPGA programming interface CDONE signal
+
+config FPGA_SPI_FREQ_COMMS
+    int "FPGA SPI clock frequency during comms"
+	range 0 80
+	default 40
+	help
+	    Clock frequency of the SPI interface in comms mode (in MHz)
+
+config FPGA_SPI_FREQ_PROGRAMMING
+    int "FPGA SPI clock frequency during programming"
+	range 0 80
+	default 20
+	help
+	    Clock frequency of the SPI interface during programming (in MHz)
+
+endmenu

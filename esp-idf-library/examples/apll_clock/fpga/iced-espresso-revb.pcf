@@ -1,0 +1,48 @@
+## SPI interface to ESP32-S2
+#set_io FSPI_CLK     15
+#set_io FSPI_MOSI    17
+#set_io FSPI_MISO    14
+#set_io FSPI_CS      16
+#
+## ESP32-S2 to FPGA extra GPIO
+#set_io FSPI_WP      13
+#set_io FSPI_HD      18
+#
+#set_io GPIO_7       21
+#set_io GPIO_8       19
+set_io GPIO_18      20
+#set_io GPIO_21      12
+#set_io GPIO_33      11
+#set_io GPIO_34      10
+#set_io GPIO_35      9
+#set_io GPIO_38      6
+#
+## P1 header pins
+set_io P1_2 44
+#set_io P1_3 45
+#set_io P1_4 46
+#set_io P1_5 47
+#set_io P1_6 48
+#set_io P1_7 2
+#set_io P1_8 3
+#set_io P1_9 4
+#
+## P2 header pins
+#set_io P2_4 43
+#set_io P2_5 42
+#set_io P2_6 38
+#set_io P2_7 37
+#set_io P2_8 36
+#set_io P2_9 35
+#set_io P2_10 34
+#set_io P2_11 32
+#set_io P2_12 31
+#set_io P2_13 28
+#set_io P2_14 27
+#set_io P2_15 26
+#set_io P2_16 25
+#set_io P2_17 23
+
+set_io RGB0         39  # red
+set_io RGB1         40  # green
+set_io RGB2         41  # blue

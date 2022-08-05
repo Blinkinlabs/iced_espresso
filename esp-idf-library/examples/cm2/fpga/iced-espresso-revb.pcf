@@ -1,0 +1,38 @@
+# Interface to ESP32-S2
+set_io FSPI_CLK     15
+set_io FSPI_MOSI    17
+set_io FSPI_MISO    14
+set_io FSPI_CS      16
+
+# LED output
+set_io O1_RED_1     38
+set_io O1_GREEN_1   48
+set_io O1_BLUE_1    37
+set_io O1_RED_2     36
+set_io O1_GREEN_2   35
+set_io O1_BLUE_2    34
+
+set_io O2_RED_1     45
+set_io O2_GREEN_1   44
+set_io O2_BLUE_1    43
+set_io O2_RED_2     47
+set_io O2_GREEN_2   46
+set_io O2_BLUE_2    42
+
+set_io G_CLK        25
+set_io G_LAT        26
+set_io G_OE         23
+
+# Mirror the switch inputs to ESP32 GPIO pins
+set_io -pullup yes  SW_1    4
+set_io -pullup yes  SW_2    2
+set_io -pullup yes  SW_T    3
+
+set_io GPIO_7       21
+set_io GPIO_8       19
+set_io GPIO_18      20
+
+# RGB status LED
+set_io RGB0         39  # red
+set_io RGB1         40  # green
+set_io RGB2         41  # blue

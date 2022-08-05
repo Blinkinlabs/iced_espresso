@@ -1,0 +1,52 @@
+# General temp files
+*.DS_Store
+*.swp
+*.lck
+*.autosave
+*.user
+*.pyc
+
+# GNU/Make
+*/*.hex
+/*.elf
+*/*.o
+*/*.d
+*/*.i
+*/*.ii
+*/*.s
+*/*.dfu
+
+# Altium
+*/History
+*/__Previews
+*/Project\ Logs\ for\ *
+*/Project\ Outputs\ for\ *
+*/debug.log
+*/*.PrjPcbStructure
+
+coasters/*/History
+coasters/*/__Previews
+coasters/*/Project\ Logs\ for\ *
+coasters/*/Project\ Outputs\ for\ *
+coasters/*/debug.log
+coasters/*/*.PrjPcbStructure
+
+# ESP32
+#sdkconfig
+sdkconfig.old
+build/
+
+# Eclipse
+.cproject
+.project
+.settings/
+
+# VScode
+.vscode/
+
+# yosys
+*.blif
+*.asc
+*.json
+*.log
+

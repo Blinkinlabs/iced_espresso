@@ -1,0 +1,41 @@
+# Interface to ESP32-S2
+set_io FSPI_CLK     15  # CLK
+set_io FSPI_D       17  # MOSI
+set_io FSPI_Q       14  # MISO
+set_io FSPI_CS0     16  # CS
+
+set_io FSPI_WP      19
+set_io FSPI_HD      18
+set_io GPIO_17      21
+set_io GPIO_18      20
+
+# P1 header pins
+set_io P0_0 46
+set_io P0_1 47
+set_io P0_2 44
+set_io P0_3 48
+set_io P0_4 45
+set_io P0_5 2
+set_io P0_6 4
+set_io P0_7 3
+
+# P2 header pins
+set_io P1_0 38
+set_io P1_1 43
+set_io P1_2 36
+set_io P1_3 35
+set_io P1_4 37
+set_io P1_5 34
+set_io P1_6 32
+set_io P1_7 31
+set_io P1_8 28
+set_io P1_9 26
+set_io P1_10 27
+set_io P1_11 23
+set_io P1_12 25
+
+#set_io -pullup yes EX_PORT_12   2
+
+set_io RGB0         39  # red
+set_io RGB1         40  # green
+set_io RGB2         41  # blue
