@@ -1,0 +1,4 @@
+[submodule "esp-idf-library/examples/cm2/components/esp32-wifi-manager"]
+	path = esp-idf-library/examples/cm2/components/esp32-wifi-manager
+	url = git@github.com:Blinkinlabs/esp32-wifi-manager.git
+	branch = work
