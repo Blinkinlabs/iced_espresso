@@ -221,6 +221,30 @@ static void uri_callback(httpd_handle_t httpd_handle) {
     http_api_register_binary_put_endpoint(httpd_handle, "/bitmap", bitmap_put);
 }
 
+#define WIFI_RESET_TIME_S 3
+
+void check_button(void) {
+    static uint64_t start_time = 0;
+    static bool last_pressed = false;
+
+    if(button_pressed()) {
+        if (!last_pressed) {
+            last_pressed = true;
+            start_time = esp_timer_get_time();
+        }
+        else {
+            if(esp_timer_get_time() - start_time > (uint64_t) WIFI_RESET_TIME_S*1000000) {
+                last_pressed = false;
+                ESP_LOGI(TAG, "Resetting wifi connection");
+                wifi_manager_disconnect_async();
+            }
+        }
+    }
+    else {
+        last_pressed = false;
+    }
+}
+
 // main /////////////////////////////////////////////////////////////////////////////
 void app_main(void)
 {
@@ -228,18 +252,6 @@ void app_main(void)
     button_init();
     status_led_init();
 
-    // Delay for a while, to allow resetting into bootloader mode
-    for (int i = 3; i > 0; i--) {
-        ESP_LOGI(TAG, "Starting in %is...", i);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
-
-    if (button_pressed()) {
-        ESP_LOGI(TAG, "Pausing for reset...");
-        while (true) {
-            vTaskDelay(1000 / portTICK_PERIOD_MS);
-        }
-    }
 
     ESP_ERROR_CHECK(fpga_start(&fpga_bin));
 
@@ -261,9 +273,10 @@ void app_main(void)
 	/* register a callback as an example to how you can integrate your code with the wifi manager */
 	wifi_manager_set_callback(WM_EVENT_STA_GOT_IP, &cb_connection_ok);
 
-
     wifi_mode = false;
     while (true) {
+        check_button();
+
         if(!wifi_mode) {
             display();
         }
