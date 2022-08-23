@@ -17,7 +17,8 @@ const fpga_bin_t fpga_bin = {
 
 // MAIN ///////////////////////////////////////////////////////////////////////
 
-const uint8_t gpios[] = {
+const uint8_t esp_gpios[] = {
+    3,
     4,
     5,
     6,
@@ -26,10 +27,12 @@ const uint8_t gpios[] = {
     44,  // U0RXD
 };
 
+#define ESP_GPIOS_COUNT (sizeof(esp_gpios)/sizeof(esp_gpios[0]))
+
 void esp_gpio_init() {
     uint64_t pin_bit_mask = 0;
-    for(int i = 0; i < sizeof(gpios)/sizeof(gpios[0]); i++) {
-        pin_bit_mask |= (1ull<<gpios[i]);
+    for(int i = 0; i < ESP_GPIOS_COUNT; i++) {
+        pin_bit_mask |= (1ull<<esp_gpios[i]);
     }
 
     const gpio_config_t config = {
@@ -45,8 +48,8 @@ void esp_gpio_init() {
 
 void esp_gpio_set(uint16_t val)
 {
-    for(int i = 0; i < sizeof(gpios)/sizeof(gpios[0]); i++) {
-        gpio_set_level(gpios[i], (1<<i) == val);
+    for(int i = 0; i < sizeof(esp_gpios)/sizeof(esp_gpios[0]); i++) {
+        gpio_set_level(esp_gpios[i], (1<<i) == val);
     }
 }
 
@@ -161,6 +164,9 @@ void internal_pin_test() {
     }
 }
 
+#define FPGA_GPIOS0_COUNT 8
+#define FPGA_GPIOS2_COUNT 14
+
 void app_main(void)
 {
     status_led_init();
@@ -177,23 +183,23 @@ void app_main(void)
 
         status_led_set(button_get());
 
-        if(val < 8) {
+        if(val < FPGA_GPIOS0_COUNT) {
             gpio_0_set(1<<val);
             esp_gpio_set(0);
             gpio_1_set(0);
         }
-        else if(val < 8+6) {
+        else if(val < (FPGA_GPIOS0_COUNT + ESP_GPIOS_COUNT)) {
             gpio_0_set(0);
-            esp_gpio_set(1<<(val-8));
+            esp_gpio_set(1<<(val-FPGA_GPIOS0_COUNT));
             gpio_1_set(0);
         }
         else {
             gpio_0_set(0);
             esp_gpio_set(0);
-            gpio_1_set(1<<(val - 8 - 6));
+            gpio_1_set(1<<(val - FPGA_GPIOS0_COUNT - ESP_GPIOS_COUNT));
         }
 
-        val = (val + 1) % (8+6+14);
+        val = (val + 1) % (FPGA_GPIOS0_COUNT + ESP_GPIOS_COUNT + FPGA_GPIOS2_COUNT);
 
         vTaskDelay(1);
     }
