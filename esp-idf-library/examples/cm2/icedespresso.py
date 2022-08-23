@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import requests
-import argparse
 
 class HttpError(Exception):
     def __init__(self, status_code, text):
@@ -15,38 +14,21 @@ class HttpError(Exception):
 
 class IcedEspresso:
     def __init__(self, ip):
-        self.base_url = 'http://' + ip + '/'
+        self.base_url = 'http://{:}/'.format(ip)
 
-    def put(self, address, data):
-        response = requests.put(self.base_url + address, json = data)
-
-        if (response.status_code != 200):
-            raise HttpError(response.status_code, response.text)
-
-    def get(self, address, data):
-        response = requests.get(self.base_url + address, json = data)
+    def get(self, address, params={}, data={}):
+        response = requests.get(self.base_url + address, params, json = data)
 
         if (response.status_code != 200):
             raise HttpError(response.status_code, response.text)
 
         return response.json()
 
-    def set_rgb_led(self, r,g,b):
-        """ Set the color of the status LED (r,g,b in range [0-1]) """
-        self.put('rgb_led', {'red':r, 'green':g, 'blue':b})
+    def put(self, address, params={}, data={}):
+        response = requests.put(self.base_url + address, params=params, json = data)
 
-    def set_status_led(self, state):
-        """ Set the status LED (true=on, false=off) """
-        self.put('status_led', {'state':state})
-
-    def write_register(self, address, value):
-        self.put('fpga_register', {'address':address, 'value':value})
-
-    def read_register(self, address):
-        return self.get('fpga_register', {'address':address})
-
-    def write_memory(self, address, data):
-        self.put('fpga_register', {'address':address, 'value':value})
+        if (response.status_code != 200):
+            raise HttpError(response.status_code, response.text)
 
     def ota(self, image):
         response = requests.put(self.base_url + 'ota',
@@ -56,9 +38,52 @@ class IcedEspresso:
         if (response.status_code != 200):
             raise HttpError(response.status_code, response.text)
 
-    def write_bitmap(self, image):
+    def status_led_get(self):
+        return self.get('status_led')['state']
+
+    def status_led_put(self, state):
+        """ Set the status LED (true=on, false=off) """
+        self.put('status_led', data={'state':state})
+
+    def fpga_bitstream_write(self, bitstream):
+        """ Write a bitstream to the FPGA, and start it """
+        response = requests.put(self.base_url + 'fpga/bitstream',
+                data = bitstream,
+                headers={'Content-Type': 'application/octet-stream'})
+
+        if (response.status_code != 200):
+            raise HttpError(response.status_code, response.text)
+
+    def register_read(self, address):
+        return self.get('fpga_register', params={'address':address})
+
+    def register_write(self, address, value):
+        self.put('fpga_register', params={'address':address}, data={'value':value})
+
+#    def write_memory(self, address, data):
+#        self.put('fpga_register', params={'address':address}, data={'value':value})
+
+
+    # CM-2 endpoints
+
+    def rgb_led_put(self, r,g,b):
+        """ Set the color of the status LED (r,g,b in range [0-1]) """
+        self.put('rgb_led', data={'red':r, 'green':g, 'blue':b})
+
+    def rgb_led_get(self):
+        return self.get('rgb_led')
+
+    def brightness_put(self, brightness):
+        """ Set the display brightness (range [0-1]) """
+        self.put('brightness', data={'brightness':brightness})
+
+    def brightness_get(self):
+        """ Set the display brightness (range [0-1]) """
+        return self.get('brightness')['brightness']
+
+    def bitmap_put(self, bitmap):
         response = requests.put(self.base_url + 'bitmap',
-                data = image,
+                data = bitmap,
                 headers={'Content-Type': 'application/octet-stream'})
 
         if (response.status_code != 200):
@@ -66,16 +91,66 @@ class IcedEspresso:
         
 
 if __name__ == '__main__':
-    import time
-    import random
-   
-    ies = [
-        IcedEspresso('172.16.1.184'),
-        ]
+    import argparse
+    import unittest
 
-    for ie in ies:
-        ie.set_rgb_led(0,0,0)
-        ie.set_status_led(False)
+    class TestHttpApi(unittest.TestCase):
+        def setUp(self):
+            self.ie = IcedEspresso(self.ip)
+        def test_status_led_get_put(self):
+            self.ie.status_led_put(True)
+            self.assertTrue(self.ie.status_led_get())
+
+            self.ie.status_led_put(False)
+            self.assertFalse(self.ie.status_led_get())
+
+        def test_cm2_rgb_led_get_put(self):
+            self.ie.rgb_led_put(0.1,0.2,0.3)
+            ret = self.ie.rgb_led_get()
+            self.assertAlmostEqual(ret['red'],0.1,places=4)
+            self.assertAlmostEqual(ret['green'],0.2,places=4)
+            self.assertAlmostEqual(ret['blue'],0.3,places=4)
+
+            self.ie.rgb_led_put(0.9,0.8,0.7)
+            ret = self.ie.rgb_led_get()
+            self.assertAlmostEqual(ret['red'],0.9, places=4)
+            self.assertAlmostEqual(ret['green'],0.8,places=4)
+            self.assertAlmostEqual(ret['blue'],0.7,places=4)
+
+        def test_cm2_brightness_get_put(self):
+            self.ie.brightness_put(0.1)
+            self.assertAlmostEqual(self.ie.brightness_get(), 0.1,places=4)
+
+            self.ie.brightness_put(1)
+            self.assertAlmostEqual(self.ie.brightness_get(),1,places=4)
+
+        def test_cm2_bitmap_put(self):
+            bitmap = bytearray(512)
+            for i in range(0,len(bitmap)):
+                bitmap[i] = 0
+            bitmap[0] = 255
+            self.ie.bitmap_put(bitmap)
+
+
+    parser = argparse.ArgumentParser(description='ICEd ESPresso HTTP API unit test')
+    parser.add_argument('-ip', required=True, help='IP address of ICEd ESPresso to test')
+
+    args = parser.parse_args()
+  
+    TestHttpApi.ip = args.ip
+
+    unittest.main(argv=[''])
+
+    exit(0) 
+    ie = IcedEspresso(args.ip)
+
+
+    with open('fpga/top.bin', 'rb') as f:
+        bitstream = f.read()
+        ie.fpga_bitstream_write(bitstream)
+
+
+    exit(0)
 
     while True:
         bitmap = bytearray(256)
@@ -91,27 +166,3 @@ if __name__ == '__main__':
             ie.write_bitmap(bitmap)
 
         time.sleep(.05)
-    exit(0)
-
-    ie.write_register(0x00F0, 65535)   # red
-    ie.write_register(0x00F1, 0)   # green
-    ie.write_register(0x00F2, 0)   # blue
-
-
-
-    status = True
-    while True:
-        ie.set_rgb_led(1,1,0)
-        ie.set_status_led(status)
-        status = not status
-        time.sleep(1)
-
-        ie.set_rgb_led(0,1,1)
-        ie.set_status_led(status)
-        status = not status
-        time.sleep(1)
-
-        ie.set_rgb_led(1,0,1)
-        ie.set_status_led(status)
-        status = not status
-        time.sleep(1)
