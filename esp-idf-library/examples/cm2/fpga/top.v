@@ -64,7 +64,9 @@ module top (
     wire clk;
     wire rst;
 
+
     // Configure the HFOSC
+    /* verilator lint_off PINMISSING */
 	SB_HFOSC #(
         .CLKHF_DIV("0b01") // 00: 48MHz, 01: 24MHz, 10: 12MHz, 11: 6MHz
     ) u_hfosc (
@@ -72,6 +74,7 @@ module top (
        	.CLKHFEN(1'b1),
         .CLKHF(clk)
     );
+    /* verilator lint_on PINMISSING */
 
     assign rst = 0; // TODO: Hardware reset input (?)
 
@@ -103,7 +106,7 @@ module top (
         .WCLKE(1'b1),
         .WDATA(matrix_1_wdata),
         .WE(matrix_1_we),
-        .MASK(1'b0)
+        .MASK(16'd0)
     );
 
     SB_RAM40_4K matrix_2_memory (
@@ -118,7 +121,7 @@ module top (
         .WCLKE(1'b1),
         .WDATA(matrix_2_wdata),
         .WE(matrix_2_we),
-        .MASK(1'b0)
+        .MASK(16'd0)
     );
 
     matrix matrix_1 (
@@ -186,7 +189,7 @@ module top (
     reg [(DATA_BUS_WIDTH-1):0] spi_read_data;
 
     // Decode the SPI commands
-    wire spi_mem_read_strobe = (spi_command[1:0] == 2'b00) && (spi_transaction_strobe);
+//    wire spi_mem_read_strobe = (spi_command[1:0] == 2'b00) && (spi_transaction_strobe);
     wire spi_mem_write_strobe = (spi_command[1:0] == 2'b01) && (spi_transaction_strobe);
 
     wire spi_reg_read_strobe = (spi_command[1:0] == 2'b10) && (spi_transaction_strobe);
@@ -195,11 +198,9 @@ module top (
 
     assign matrix_1_waddr = spi_address[7:0];
     assign matrix_1_wdata = spi_write_data;
-    reg matrix_1_we;
 
     assign matrix_2_waddr = spi_address[7:0];
     assign matrix_2_wdata = spi_write_data;
-    reg matrix_2_we;
 
     //############ Configuration Registers ##################################
 
@@ -237,6 +238,8 @@ module top (
                 if(spi_reg_read_strobe)
                     spi_read_data <= blue_duty;
             end
+            default:
+            ;
         endcase
 
         // Ram Map
@@ -259,6 +262,8 @@ module top (
                     matrix_2_we <= 1;
                 end
             end
+            default:
+                ;
         endcase
     end
 

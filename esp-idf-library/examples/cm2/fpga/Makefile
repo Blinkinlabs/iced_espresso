@@ -38,7 +38,11 @@ stats: $(TARGET).json $(TARGET).asc
 	fgrep 'Info: Max frequency for clock' $(TARGET)-nextpnr.log	
 
 lint: $(VERILOG_FILES)
-	verilator --lint-only -Wall -Wno-DECLFILENAME -Ihw_blocks $(VERILOG_FILES)
+	verilator --lint-only -Wall -Wno-DECLFILENAME \
+        --top-module ${TARGET} \
+        +define+NO_ICE40_DEFAULT_ASSIGNMENTS \
+        /usr/local/share/yosys/ice40/cells_sim.v \
+        $(VERILOG_FILES)
 
 .PHONY: clean
 clean:
