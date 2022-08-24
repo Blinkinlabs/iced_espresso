@@ -26,9 +26,9 @@ static void led_set(
         uint16_t green,
         uint16_t blue)
 {
-    fpga_comms_write_register(RED_DUTY_REG, red);
-    fpga_comms_write_register(GREEN_DUTY_REG, green);
-    fpga_comms_write_register(BLUE_DUTY_REG, blue);
+    fpga_comms_register_write(RED_DUTY_REG, red);
+    fpga_comms_register_write(GREEN_DUTY_REG, green);
+    fpga_comms_register_write(BLUE_DUTY_REG, blue);
 }
 
 // MAIN ///////////////////////////////////////////////////////////////////////

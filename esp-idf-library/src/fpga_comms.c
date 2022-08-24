@@ -19,8 +19,8 @@ static const char TAG[] = "fpga_comms";
 
 static spi_device_handle_t fpga_comm_device = NULL;
 
-SemaphoreHandle_t read_register_semaphore = NULL;
-static QueueHandle_t read_register_queue = NULL;
+SemaphoreHandle_t register_read_semaphore = NULL;
+static QueueHandle_t register_read_queue = NULL;
 
 //! @brief Handle a finished SPI transaction
 //!
@@ -30,9 +30,9 @@ static QueueHandle_t read_register_queue = NULL;
 //! used to clean up the transactions resources immediately.
 //!
 //! In the fpga comms driver, all transactions are performed using memory from
-//! the output_trans_pool. For TX-only transactions (send_buffer and
-//! write_register), no completion conformation is needed, so the callback can
-//! directly release the buffer. For RX transactions (read_register), the
+//! the output_trans_pool. For TX-only transactions (memory_write and
+//! register_write), no completion conformation is needed, so the callback can
+//! directly release the buffer. For RX transactions (register_read), the
 //! return value should be stored in a response queue before releasing the
 //! buffer. If a read_buffer() command is implemented, this method would need
 //! to be extended to handle that case.
@@ -48,7 +48,7 @@ static void IRAM_ATTR trans_done_callback(spi_transaction_t* spi_transaction)
         const uint16_t value_shifted = ((value >> 16) & 0xFF) | (value & 0xFF00);
 
         xQueueSendFromISR(
-            read_register_queue,
+            register_read_queue,
             &value_shifted,
             &xHigherPriorityTaskWoken);
     }
@@ -59,7 +59,7 @@ static void IRAM_ATTR trans_done_callback(spi_transaction_t* spi_transaction)
         portYIELD_FROM_ISR();
 }
 
-esp_err_t IRAM_ATTR fpga_comms_send_buffer(uint16_t address, const uint8_t* buffer, int length, int retry_count)
+esp_err_t IRAM_ATTR fpga_comms_memory_write(uint16_t address, const uint8_t* buffer, int length, int retry_count)
 {
     if (fpga_comm_device == NULL) {
         ESP_LOGE(TAG, "fpga_driver not initialized, aborting");
@@ -110,7 +110,12 @@ esp_err_t IRAM_ATTR fpga_comms_send_buffer(uint16_t address, const uint8_t* buff
     return ret;
 }
 
-esp_err_t IRAM_ATTR fpga_comms_write_register(uint16_t address, uint16_t data)
+esp_err_t IRAM_ATTR fpga_comms_memory_read(uint16_t address, uint8_t* buffer, int length, int retry_count) {
+    ESP_LOGE(TAG, "memory read not implemented");
+    return ESP_FAIL;
+}
+
+esp_err_t IRAM_ATTR fpga_comms_register_write(uint16_t address, uint16_t data)
 {
     if (fpga_comm_device == NULL) {
         ESP_LOGE(TAG, "fpga_driver not initialized, aborting");
@@ -145,7 +150,7 @@ esp_err_t IRAM_ATTR fpga_comms_write_register(uint16_t address, uint16_t data)
     return ret;
 }
 
-esp_err_t IRAM_ATTR fpga_comms_read_register(uint16_t address, uint16_t* data)
+esp_err_t IRAM_ATTR fpga_comms_register_read(uint16_t address, uint16_t* data)
 {
 
     if (fpga_comm_device == NULL) {
@@ -172,7 +177,7 @@ esp_err_t IRAM_ATTR fpga_comms_read_register(uint16_t address, uint16_t* data)
     spi_transaction->cmd = COMMAND_READ_REG;
     spi_transaction->user = (void*)output_trans_pool;
 
-    xSemaphoreTake(read_register_semaphore, portMAX_DELAY);
+    xSemaphoreTake(register_read_semaphore, portMAX_DELAY);
 
     xSemaphoreTake(master_spi_semaphore, portMAX_DELAY);
     esp_err_t ret = spi_device_queue_trans(fpga_comm_device, spi_transaction, 0);
@@ -185,7 +190,7 @@ esp_err_t IRAM_ATTR fpga_comms_read_register(uint16_t address, uint16_t* data)
         goto done;
     }
 
-    if (pdPASS != xQueueReceive(read_register_queue, data, pdMS_TO_TICKS(100))) {
+    if (pdPASS != xQueueReceive(register_read_queue, data, pdMS_TO_TICKS(100))) {
         ESP_LOGE(TAG, "Error reading data from address queue");
 
         ret = ESP_FAIL;
@@ -193,7 +198,7 @@ esp_err_t IRAM_ATTR fpga_comms_read_register(uint16_t address, uint16_t* data)
     }
 
 done:
-    xSemaphoreGive(read_register_semaphore);
+    xSemaphoreGive(register_read_semaphore);
     return ret;
 }
 
@@ -220,16 +225,16 @@ static esp_err_t fpga_comms_spi_device_add()
 
 esp_err_t fpga_comms_init()
 {
-    read_register_queue = xQueueCreate(1, sizeof(uint16_t));
+    register_read_queue = xQueueCreate(1, sizeof(uint16_t));
 
-    if (read_register_queue == NULL) {
+    if (register_read_queue == NULL) {
         ESP_LOGE(TAG, "Error creating read address queue");
         return ESP_FAIL;
     }
 
-    read_register_semaphore = xSemaphoreCreateMutex();
+    register_read_semaphore = xSemaphoreCreateMutex();
 
-    if (read_register_semaphore == NULL) {
+    if (register_read_semaphore == NULL) {
         ESP_LOGE(TAG, "Error creating read address semaphore");
         return ESP_FAIL;
     }

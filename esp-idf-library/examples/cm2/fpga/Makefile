@@ -44,6 +44,9 @@ lint: $(VERILOG_FILES)
         /usr/local/share/yosys/ice40/cells_sim.v \
         $(VERILOG_FILES)
 
+upload: $(TARGET).bin
+	curl -X PUT --data-binary @$(TARGET).bin http://172.16.1.184/fpga/bitstream 
+
 .PHONY: clean
 clean:
 	$(RM) -f \

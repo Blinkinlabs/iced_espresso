@@ -179,7 +179,7 @@ esp_err_t register_put(const cJSON* request)
         address->valueint,
         value->valueint);
 
-    return fpga_comms_write_register(address->valueint, value->valueint);
+    return fpga_comms_register_write(address->valueint, value->valueint);
 }
 
 esp_err_t register_get(const cJSON* request, cJSON** response)
@@ -205,7 +205,7 @@ esp_err_t register_get(const cJSON* request, cJSON** response)
         address->valueint);
 
     uint16_t val;
-    esp_err_t ret = fpga_comms_read_register(address->valueint, &val);
+    esp_err_t ret = fpga_comms_register_read(address->valueint, &val);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Error reading register");
         ;
@@ -359,7 +359,7 @@ esp_err_t dmx_put(const char* buf, int length)
 //        led_ram[led] = buf[led];
     }
 
-    return fpga_comms_send_buffer(0x0000,
+    return fpga_comms_memory_write(0x0000,
             (const uint8_t*)buf,
             length,
             0);

@@ -55,16 +55,16 @@ void esp_gpio_set(uint16_t val)
 
 esp_err_t gpio_0_set(uint16_t val)
 {
-    return fpga_comms_write_register(0x0000, val);
+    return fpga_comms_register_write(0x0000, val);
 }
 
 esp_err_t gpio_1_set(uint16_t val)
 {
-    return fpga_comms_write_register(0x0001, val);
+    return fpga_comms_register_write(0x0001, val);
 }
 
 esp_err_t esp_pins_read(uint16_t *val) {
-    return fpga_comms_read_register(0x0002, val);
+    return fpga_comms_register_read(0x0002, val);
 }
 
 #define BUTTON_PIN 0

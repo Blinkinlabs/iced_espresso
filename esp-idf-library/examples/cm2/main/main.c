@@ -50,9 +50,9 @@ esp_err_t led_set(
     const uint16_t green_i = green * 65535;
     const uint16_t blue_i = blue * 65535;
 
-    fpga_comms_write_register(RED_DUTY_REG, red_i);
-    fpga_comms_write_register(GREEN_DUTY_REG, green_i);
-    return fpga_comms_write_register(BLUE_DUTY_REG, blue_i);
+    fpga_comms_register_write(RED_DUTY_REG, red_i);
+    fpga_comms_register_write(GREEN_DUTY_REG, green_i);
+    return fpga_comms_register_write(BLUE_DUTY_REG, blue_i);
 }
 
 esp_err_t led_get(
@@ -64,9 +64,9 @@ esp_err_t led_get(
     uint16_t green_uint;
     uint16_t blue_uint;
 
-    fpga_comms_read_register(RED_DUTY_REG, &red_uint);
-    fpga_comms_read_register(GREEN_DUTY_REG, &green_uint);
-    fpga_comms_read_register(BLUE_DUTY_REG, &blue_uint);
+    fpga_comms_register_read(RED_DUTY_REG, &red_uint);
+    fpga_comms_register_read(GREEN_DUTY_REG, &green_uint);
+    fpga_comms_register_read(BLUE_DUTY_REG, &blue_uint);
 
     *red = red_uint/65535.0;
     *green = green_uint/65535.0;
@@ -75,9 +75,105 @@ esp_err_t led_get(
     return ESP_OK;
 }
 
-// HTTP server ////////////////////////////////////////////////////////
 
-esp_err_t rgb_led_put(const cJSON* json)
+
+// CM-2 /////////////////////////////////////////////////////////////////////////////
+float distance(float x1, float y1, float x2, float y2)
+{
+    const float total = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+    return sqrt(total);
+}
+
+// Number of LEDs in a single panel
+#define LED_ROWS 32
+#define LED_COLS 8
+#define LED_COUNT (LED_ROWS*LED_COLS)
+
+static double g_brightness = 1;
+
+static void display()
+{
+    static uint16_t led_ram_left[LED_COUNT];
+    static uint16_t led_ram_right[LED_COUNT];
+
+    static float phase = 0;
+
+    static float x_focus = 3;
+    static float y_focus = 15;
+    static bool x_focus_dir = true;
+    static bool y_focus_dir = true;
+
+    for (int x = 0; x < 8; x++) {
+        for (int y = 0; y < 32; y++) {
+            const int i = x + y * 8;
+
+            const float dist_left = distance(x, y * .65, x_focus, y_focus * .65);
+            led_ram_left[i] = (int)(g_brightness*(127 * (sin(phase - dist_left / 2.0) + 1)));
+
+            const float dist_right = distance(x + 13, y * .65, x_focus, y_focus * .65);
+            led_ram_right[i] = (int)(g_brightness*(127 * (sin(phase - dist_right / 2.0) + 1)));
+        }
+    }
+
+    fpga_comms_memory_write(0x0200, (const uint8_t*)led_ram_left, sizeof(led_ram_left), 0);
+    fpga_comms_memory_write(0x0000, (const uint8_t*)led_ram_right, sizeof(led_ram_right), 0);
+
+    phase += .1;
+
+    const float x_focus_speed = .02;
+    const float y_focus_speed = .03;
+
+    if (x_focus_dir) {
+        x_focus += x_focus_speed;
+        if (x_focus > 21 + 3)
+            x_focus_dir = !x_focus_dir;
+    } else {
+        x_focus -= x_focus_speed;
+        if (x_focus < 0 - 3)
+            x_focus_dir = !x_focus_dir;
+    }
+
+    if (y_focus_dir) {
+        y_focus += y_focus_speed;
+        if (y_focus > 31)
+            y_focus_dir = !y_focus_dir;
+    } else {
+        y_focus -= y_focus_speed;
+        if (y_focus < 0)
+            y_focus_dir = !y_focus_dir;
+    }
+}
+
+static esp_err_t brightness_put(httpd_req_t* req, const cJSON* request)
+{
+    if (request == NULL) {
+        return ESP_FAIL;
+    }
+
+    const cJSON* brightness = cJSON_GetObjectItemCaseSensitive(request, "brightness");
+
+    if (!cJSON_IsNumber(brightness)) {
+        ESP_LOGE(TAG, "Can't understand JSON");
+        return ESP_FAIL;
+    }
+
+    if ((brightness->valuedouble > 1) || (brightness->valuedouble < 0)) {
+        ESP_LOGE(TAG, "brightness out of range, brightness:%f",
+            brightness->valuedouble);
+        return ESP_FAIL;
+    }
+
+    ESP_LOGD(TAG, "brightness post, brightness:%f",
+        brightness->valuedouble);
+
+    g_brightness = brightness->valuedouble;
+
+    return ESP_OK;
+}
+
+// CM-2 HTTP endpoints ////////////////////////////////////////////////////
+
+static esp_err_t rgb_led_put(httpd_req_t* req, const cJSON* json)
 {
     if (json == NULL) {
         return ESP_FAIL;
@@ -94,12 +190,24 @@ esp_err_t rgb_led_put(const cJSON* json)
         return ESP_FAIL;
     }
 
+    if ((red->valuedouble > 1) || (red->valuedouble < 0)
+        || (green->valuedouble > 1) || (green->valuedouble < 0)
+        || (blue->valuedouble > 1) || (blue->valuedouble < 0)
+        ) {
+        ESP_LOGE(TAG, "color data out of range, red:%f green:%f blue:%f",
+            red->valuedouble,
+            green->valuedouble,
+            blue->valuedouble
+            );
+        return ESP_FAIL;
+    }
+
     return led_set(red->valuedouble,
         green->valuedouble,
         blue->valuedouble);
 }
 
-esp_err_t rgb_led_get(cJSON** response)
+static esp_err_t rgb_led_get(httpd_req_t* req, cJSON** response)
 {
     double red_d;
     double green_d;
@@ -135,96 +243,7 @@ esp_err_t rgb_led_get(cJSON** response)
     return ESP_OK;
 }
 
-
-// CM-2 /////////////////////////////////////////////////////////////////////////////
-float distance(float x1, float y1, float x2, float y2)
-{
-    const float total = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
-    return sqrt(total);
-}
-
-// Number of LEDs in a single panel
-#define LED_ROWS 32
-#define LED_COLS 8
-#define LED_COUNT (LED_ROWS*LED_COLS)
-
-static double g_brightness = 1;
-
-void display()
-{
-    static uint16_t led_ram_left[LED_COUNT];
-    static uint16_t led_ram_right[LED_COUNT];
-
-    static float phase = 0;
-
-    static float x_focus = 3;
-    static float y_focus = 15;
-    static bool x_focus_dir = true;
-    static bool y_focus_dir = true;
-
-    for (int x = 0; x < 8; x++) {
-        for (int y = 0; y < 32; y++) {
-            const int i = x + y * 8;
-
-            const float dist_left = distance(x, y * .65, x_focus, y_focus * .65);
-            led_ram_left[i] = (int)(g_brightness*(127 * (sin(phase - dist_left / 2.0) + 1)));
-
-            const float dist_right = distance(x + 13, y * .65, x_focus, y_focus * .65);
-            led_ram_right[i] = (int)(g_brightness*(127 * (sin(phase - dist_right / 2.0) + 1)));
-        }
-    }
-
-    fpga_comms_send_buffer(0x0200, (const uint8_t*)led_ram_left, sizeof(led_ram_left), 0);
-    fpga_comms_send_buffer(0x0000, (const uint8_t*)led_ram_right, sizeof(led_ram_right), 0);
-
-    phase += .1;
-
-    const float x_focus_speed = .02;
-    const float y_focus_speed = .03;
-
-    if (x_focus_dir) {
-        x_focus += x_focus_speed;
-        if (x_focus > 21 + 3)
-            x_focus_dir = !x_focus_dir;
-    } else {
-        x_focus -= x_focus_speed;
-        if (x_focus < 0 - 3)
-            x_focus_dir = !x_focus_dir;
-    }
-
-    if (y_focus_dir) {
-        y_focus += y_focus_speed;
-        if (y_focus > 31)
-            y_focus_dir = !y_focus_dir;
-    } else {
-        y_focus -= y_focus_speed;
-        if (y_focus < 0)
-            y_focus_dir = !y_focus_dir;
-    }
-}
-
-esp_err_t brightness_put(const cJSON* request)
-{
-    if (request == NULL) {
-        return ESP_FAIL;
-    }
-
-    const cJSON* brightness = cJSON_GetObjectItemCaseSensitive(request, "brightness");
-
-    if (!cJSON_IsNumber(brightness)) {
-        ESP_LOGE(TAG, "Can't understand JSON");
-        return ESP_FAIL;
-    }
-
-    ESP_LOGD(TAG, "brightness post, brightness:%f",
-        brightness->valuedouble);
-
-    g_brightness = brightness->valuedouble;
-
-    return ESP_OK;
-}
-
-esp_err_t brightness_get(cJSON** response)
+static esp_err_t brightness_get(httpd_req_t* req, cJSON** response)
 {
     *response = cJSON_CreateObject();
     if (*response == NULL) {
@@ -246,7 +265,7 @@ esp_err_t brightness_get(cJSON** response)
 // TODO: Make this a message / local variable
 bool wifi_mode;
 
-esp_err_t bitmap_put(const char* buf, int length)
+static esp_err_t bitmap_put(const char* buf, int length)
 {
 
     if ((buf == NULL) || (length != LED_COUNT*2)) {
@@ -267,8 +286,8 @@ esp_err_t bitmap_put(const char* buf, int length)
         led_ram_right[led] = buf[(row*LED_COLS*2 + (LED_COLS*2-1-8-col))];
     }
 
-    fpga_comms_send_buffer(0x0200, (const uint8_t*)led_ram_left, sizeof(led_ram_left), 0);
-    fpga_comms_send_buffer(0x0000, (const uint8_t*)led_ram_right, sizeof(led_ram_right), 0);
+    fpga_comms_memory_write(0x0200, (const uint8_t*)led_ram_left, sizeof(led_ram_left), 0);
+    fpga_comms_memory_write(0x0000, (const uint8_t*)led_ram_right, sizeof(led_ram_right), 0);
 
     return ESP_OK;
 }
@@ -303,7 +322,7 @@ static void uri_callback(httpd_handle_t httpd_handle) {
 
 #define WIFI_RESET_TIME_S 3
 
-void check_button(void) {
+static void check_button(void) {
     static uint64_t start_time = 0;
     static bool last_pressed = false;
 

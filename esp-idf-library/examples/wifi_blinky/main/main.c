@@ -54,9 +54,9 @@ esp_err_t led_set(
     const uint16_t green_i = green * 65535;
     const uint16_t blue_i = blue * 65535;
 
-    fpga_comms_write_register(RED_DUTY_REG, red_i);
-    fpga_comms_write_register(GREEN_DUTY_REG, green_i);
-    return fpga_comms_write_register(BLUE_DUTY_REG, blue_i);
+    fpga_comms_register_write(RED_DUTY_REG, red_i);
+    fpga_comms_register_write(GREEN_DUTY_REG, green_i);
+    return fpga_comms_register_write(BLUE_DUTY_REG, blue_i);
 }
 
 

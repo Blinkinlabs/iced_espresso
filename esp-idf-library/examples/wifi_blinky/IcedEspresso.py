@@ -40,10 +40,10 @@ class IcedEspresso:
         """ Set the status LED (true=on, false=off) """
         self.put('status_led', {'state':state})
 
-    def write_register(self, address, value):
+    def register_write(self, address, value):
         self.put('fpga/register', {'address':address, 'value':value})
 
-    def read_register(self, address):
+    def register_read(self, address):
         return self.get('fpga/register', {'address':address})
 
     def ota(self, image):
@@ -65,9 +65,9 @@ if __name__ == '__main__':
 
     iep = IcedEspresso(args.ip)
 
-    iep.write_register(0x00F0, 65535)   # red
-    iep.write_register(0x00F1, 0)   # green
-    iep.write_register(0x00F2, 0)   # blue
+    iep.register_write(0x00F0, 65535)   # red
+    iep.register_write(0x00F1, 0)   # green
+    iep.register_write(0x00F2, 0)   # blue
 
     with open('build/wifi-blinky.bin', 'rb') as f:
         update_image = f.read()

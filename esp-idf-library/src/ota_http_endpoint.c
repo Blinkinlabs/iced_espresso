@@ -5,13 +5,13 @@
 
 static const char* TAG = "ota_http_endpoint";
 
-#define OTA_CHUNK_SIZE (2048)
+#define CHUNK_SIZE (2048)
 
 static esp_err_t ota_put_handler(httpd_req_t* req)
 {
     esp_err_t ret;
 
-    char* buf = malloc(OTA_CHUNK_SIZE);
+    char* buf = malloc(CHUNK_SIZE);
     if (buf == NULL) {
         ESP_LOGE(TAG, "Unable to reserve memory for OTA, try rebooting");
         RESPOND_ERROR_RECEIVING_DATA();
@@ -24,7 +24,7 @@ static esp_err_t ota_put_handler(httpd_req_t* req)
     size_t remaining = req->content_len;
 
     while (remaining > 0) {
-        const size_t chunk_size = ((OTA_CHUNK_SIZE < remaining) ? OTA_CHUNK_SIZE : remaining);
+        const size_t chunk_size = ((CHUNK_SIZE < remaining) ? CHUNK_SIZE : remaining);
 
         /* Read the data for the request */
         const int received = httpd_req_recv(req, buf, chunk_size);
