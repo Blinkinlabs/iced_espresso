@@ -44,15 +44,15 @@ module matrix (
     localparam STATE_LATCH = 3'd4;
     localparam STATE_DELAY = 3'd5;
 
-    reg [15:0] pwm_lut_1 [255:0];
-    initial begin
-        $readmemh("lut_8_to_16_pow_1.80.list", pwm_lut_1);
-    end
-
-    reg [15:0] pwm_lut_2 [255:0];
-    initial begin
-        $readmemh("lut_8_to_16_pow_1.80.list", pwm_lut_2);
-    end
+//    reg [15:0] pwm_lut_1 [255:0];
+//    initial begin
+//        $readmemh("lut_8_to_16_pow_1.80.list", pwm_lut_1);
+//    end
+//
+//    reg [15:0] pwm_lut_2 [255:0];
+//    initial begin
+//        $readmemh("lut_8_to_16_pow_1.80.list", pwm_lut_2);
+//    end
 
     // Invert the lowest 16 bits, to match the hardware layout
     // 15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0,31,30...
@@ -63,6 +63,8 @@ module matrix (
     // Flip byte endianness
     wire [15:0] led_data_1 = {i_rdata_1[7:0], i_rdata_1[15:8]};
     wire [15:0] led_data_2 = {i_rdata_2[7:0], i_rdata_2[15:8]};
+//    wire [15:0] led_data_1 = i_rdata_1;
+//    wire [15:0] led_data_2 = i_rdata_2;
 
     always @(posedge i_clk) begin
         o_led_lat <= 0;
@@ -90,8 +92,10 @@ module matrix (
             end
             STATE_WRITING:  // Write one frame of LED data
             begin
-                o_led_red1 <= pwm_lut_1[led_data_1[7:0]][pwm_bit];
-                o_led_red2 <= pwm_lut_2[led_data_2[7:0]][pwm_bit];
+                //o_led_red1 <= pwm_lut_1[led_data_1[7:0]][pwm_bit];
+                //o_led_red2 <= pwm_lut_2[led_data_2[7:0]][pwm_bit];
+                o_led_red1 <= led_data_1[pwm_bit];
+                o_led_red2 <= led_data_2[pwm_bit];
 
                 case(o_led_clk)
                     0:
