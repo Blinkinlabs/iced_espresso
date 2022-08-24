@@ -227,7 +227,7 @@ static esp_err_t memory_get_handler(httpd_req_t* req)
     ret = fpga_comms_memory_read(address, (uint8_t*)buf, length, 0);
     if(ret != ESP_OK) {
         ESP_LOGE(TAG, "Error reading from FPGA memory");
-        RESPOND_ERROR_SAVING_STATE();
+        RESPOND_ERROR(HTTPD_500_INTERNAL_SERVER_ERROR, "Error reading from FPGA");
         free(buf);
         return ESP_FAIL;
     }

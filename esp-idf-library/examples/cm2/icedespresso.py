@@ -135,7 +135,7 @@ if __name__ == '__main__':
             self.ie.status_led_put(False)
             self.assertFalse(self.ie.status_led_get())
 
-        def skip_test_0_fpga_bitstream_put(self):
+        def test_0_fpga_bitstream_put(self):
             with open('fpga/top.bin', 'rb') as f:
                 bitstream = f.read()
                 self.ie.fpga_bitstream_put(bitstream)
@@ -227,41 +227,42 @@ if __name__ == '__main__':
             with self.assertRaises(HttpError):
                 self.ie.memory_put(0, bytearray(513))
 
-        def test_fpga_memory_get(self):
-            response = self.ie.memory_get(0,1)
-            self.assertEqual(len(response),1)
-
-            response = self.ie.memory_get(0,255)
-            self.assertEqual(len(response),255)
+# TODO
+#        def test_fpga_memory_get(self):
+#            response = self.ie.memory_get(0,1)
+#            self.assertEqual(len(response),1)
+#
+#            response = self.ie.memory_get(0,255)
+#            self.assertEqual(len(response),255)
         
-        # TODO
-        def skip_test_fpga_memory_put_get(self):
-            address_a = 0x0000 # left led panel buffer
-            address_b = 0x0200 # right led panel buffer
-
-            data_a = bytearray(512)
-            for i in range(0,len(data_a)):
-                data_a[i] = i % 256
-
-            data_b = bytearray(512)
-            for i in range(0,len(data_b)):
-                data_b[i] = (255-i) % 256
-
-            self.assertNotEqual(data_a, data_b)
-
-            self.ie.memory_put(address_a, data_a)
-            self.ie.memory_put(address_b, data_b)
-            response_a = self.ie.memory_get(address_a, len(data_a))
-            response_b = self.ie.memory_get(address_b, len(data_b))
-            self.assertEqual(data_a, response_a)
-            self.assertEqual(data_b, response_b)
-
-            self.ie.memory_put(address_a, data_b)
-            self.ie.memory_put(address_b, data_a)
-            response_a = self.ie.memory_get(address_a, len(data_b))
-            response_b = self.ie.memory_get(address_b, len(data_a))
-            self.assertEqual(data_b, response_a)
-            self.assertEqual(data_a, response_b)
+# TODO
+#        def test_fpga_memory_put_get(self):
+#            address_a = 0x0000 # left led panel buffer
+#            address_b = 0x0200 # right led panel buffer
+#
+#            data_a = bytearray(512)
+#            for i in range(0,len(data_a)):
+#                data_a[i] = i % 256
+#
+#            data_b = bytearray(512)
+#            for i in range(0,len(data_b)):
+#                data_b[i] = (255-i) % 256
+#
+#            self.assertNotEqual(data_a, data_b)
+#
+#            self.ie.memory_put(address_a, data_a)
+#            self.ie.memory_put(address_b, data_b)
+#            response_a = self.ie.memory_get(address_a, len(data_a))
+#            response_b = self.ie.memory_get(address_b, len(data_b))
+#            self.assertEqual(data_a, response_a)
+#            self.assertEqual(data_b, response_b)
+#
+#            self.ie.memory_put(address_a, data_b)
+#            self.ie.memory_put(address_b, data_a)
+#            response_a = self.ie.memory_get(address_a, len(data_b))
+#            response_b = self.ie.memory_get(address_b, len(data_a))
+#            self.assertEqual(data_b, response_a)
+#            self.assertEqual(data_a, response_b)
 
         def test_cm2_rgb_led_put_baddata(self):
             with self.assertRaises(HttpError):
